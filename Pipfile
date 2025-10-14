@@ -1,0 +1,38 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+environs = "*"
+# UI Framework.
+gradio = "*"
+# RAG Processing.
+chromadb = "*"
+langchain = "*"
+langchain-chroma = "*"
+langchain-openai = "*"
+langchain-community = "*"
+# PDF Processing.
+unstructured = {extras = ["pdf"], version = "*" }
+# Models SDK.
+openai = "*"
+
+[dev-packages]
+# Formatters.
+isort = "*"
+# Linters.
+mypy = "*"
+mccabe = "*"
+pyflakes = "*"
+pydocstyle = "*"
+pycodestyle = "*"
+# Testing.
+pytest = "*"
+coverage = "*"
+# Interactive Notebook.
+ipykernel = "*"
+ipywidgets = "*"
+
+[requires]
+python_version = "3.13"
