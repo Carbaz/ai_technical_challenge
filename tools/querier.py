@@ -17,7 +17,7 @@ basicConfig(level=LOG_LEVEL, style=LOG_STYLE, format=LOG_FORMAT)
 _logger = getLogger(__name__)
 
 
-def retrieve_company_data_from_vectorstore(query, company, vectorstore, n_vectors=4):
+def retrieve_company_data_from_vectorstore(query, company, vectorstore, n_vectors=10):
     """Run similarity search filtered by company."""
     return vectorstore.similarity_search(query, k=n_vectors, filter={'company': company})
 
