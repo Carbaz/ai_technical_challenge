@@ -1,11 +1,20 @@
 """Chroma Vectorstore REPL querier."""
 
 from argparse import ArgumentParser
-from logging import getLogger
+from logging import basicConfig, getLogger
 from pathlib import Path
 
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
+
+from app.config import CHROMADB_PATH, EMBEDDING_MODEL, LOG_FORMAT, LOG_LEVEL, LOG_STYLE
+
+
+# Setup the global logger.
+basicConfig(level=LOG_LEVEL, style=LOG_STYLE, format=LOG_FORMAT)
+
+# Instantiate local logger.
+_logger = getLogger(__name__)
 
 
 def retrieve_company_data_from_vectorstore(query, company, vectorstore, n_vectors=4):
@@ -44,14 +53,11 @@ _logger = getLogger(__name__)
 
 
 if __name__ == '__main__':
-    # Define Embedding model.
-    EMBEDDING_MODEL = 'text-embedding-3-small'
-
     # Parse input arguments.
     _logger.debug('PARSING ARGUMENTS')
     parser = ArgumentParser(description='Generate RAG embeddings.')
     parser.add_argument('-p', '--persistence', help='Database persistence path',
-                        required=True)
+                        default=CHROMADB_PATH)
     args = parser.parse_args()
     _logger.debug(f'PARSED ARGUMENTS: {vars(args)}')
 

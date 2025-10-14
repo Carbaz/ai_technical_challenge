@@ -1,8 +1,6 @@
 """Document Embeddings module."""
 
-from argparse import ArgumentParser
-from logging import basicConfig, getLogger
-from pathlib import Path
+from logging import getLogger
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
@@ -94,49 +92,3 @@ def embed_directory(directory, metadata, db_path, model_name, chunk_size, chunk_
 
 # Instantiate local logger.
 _logger = getLogger(__name__)
-
-
-if __name__ == '__main__':
-    # Application log messages format style.
-    LOG_STYLE = '{'
-    # Application log level.
-    LOG_LEVEL = 'INFO'
-    # Application log messages format.
-    LOG_FORMAT = ('{asctime} {levelname:<8} {processName}({process})'
-                  ' {threadName} {name} {lineno} "{message}"')
-    # Define Embedding model.
-    EMBEDDING_MODEL = 'text-embedding-3-small'
-
-    # Setup the global logger.
-    basicConfig(level=LOG_LEVEL, style=LOG_STYLE, format=LOG_FORMAT)
-
-    # Parse input arguments.
-    _logger.debug('PARSING ARGUMENTS')
-    parser = ArgumentParser(description='Generate RAG embeddings.')
-    parser.add_argument('-s', '--sources', help='Source data files folder',
-                        required=True)
-    parser.add_argument('-c', '--company', help='Company name',
-                        required=True)
-    parser.add_argument('-p', '--persistence', help='Database persistence path',
-                        required=True)
-    parser.add_argument('-z', '--size', help='Chunk size', default=1000, type=int)
-    parser.add_argument('-o', '--overlap', help='Chunk overlap', default=100, type=int)
-    args = parser.parse_args()
-    _logger.debug(f'PARSED ARGUMENTS: {vars(args)}')
-
-    # Sanitize inputs.
-    # Sources path must exist and be a folder.
-    sources_path = Path(args.sources)
-    if not sources_path.is_dir():
-        print(f'Sources path is not a valid folder: "{args.sources}"')
-        exit()
-    # Persistence path if exists must be a folder. (If not exists will be created later)
-    persistence_path = Path(args.persistence)
-    if Path(args.persistence).exists() and not Path(args.persistence).is_dir():
-        print(f'Persistence path is not a valid folder: "{args.persistence}"')
-        exit()
-
-    # Embed documents.
-    metadata = {'company': args.company}
-    embed_directory(args.sources, metadata, args.persistence, model_name=EMBEDDING_MODEL,
-                    chunk_size=args.size, chunk_overlap=args.overlap)
