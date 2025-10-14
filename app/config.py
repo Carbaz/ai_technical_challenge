@@ -41,7 +41,7 @@ with env.prefixed('FCM_APA_'):
     # ##################### VECTORSTORE SERVICE CONFIGURATION:
 
     # Chat model for user interactions.
-    CHAT_MODEL = env.str('CHAT_MODEL', 'gpt-5-mini')
+    CHAT_MODEL = env.str('CHAT_MODEL', 'gpt-4.1-mini')
     # Chunking model for document splitting.
     CHUNKING_MODEL = env.str('CHUNKING_MODEL', 'gpt-5-mini')
     # Embedding model for text representation.

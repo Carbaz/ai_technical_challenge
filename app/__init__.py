@@ -1,4 +1,4 @@
-"""Airline Policy Assistant Service initialization module."""
+"""Airline Policy Assistant Service package."""
 
 from logging import basicConfig, getLogger
 
