@@ -18,7 +18,7 @@ COPY Pipfile.lock ./
 RUN chown -R runuser:rungroup .
 USER runuser
 RUN pipenv install --deploy --clear
-HEALTHCHECK --interval=10s --start-period=15s --retries=3 --timeout=5s \
+HEALTHCHECK --start-period=15s --interval=10s --timeout=5s --retries=3 \
     CMD wget localhost:${GRADIO_HTTP_PORT:-7860}/ --spider || exit 1
 
 FROM base AS init

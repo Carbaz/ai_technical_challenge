@@ -14,6 +14,8 @@ services:
     depends_on:
       chromadb:
         condition: service_healthy
+    profiles:
+      - reload
 
   backend:
     container_name: FCM_APA_Gradio_Service_Dev
@@ -33,7 +35,8 @@ services:
       - "7860:7860"
     restart: on-failure
     depends_on:
-      - backend_init
+      chromadb:
+        condition: service_healthy
 
   chromadb:
     container_name: FCM_APA_ChromaDB
