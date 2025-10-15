@@ -9,7 +9,7 @@ from langchain_chroma import Chroma
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 from .config import CHAT_MODEL, CHROMADB_HOST, CHROMADB_PORT, EMBEDDING_MODEL
-from .config import GRADIO_EXPOSE, GRADIO_HTTP_PORT, LLM_API_KEY, LLM_API_URL
+from .config import GRADIO_HTTP_PORT, GRADIO_SERVER_NAME, LLM_API_KEY, LLM_API_URL
 
 
 # Instantiate local logger.
@@ -43,5 +43,5 @@ def _chat(message, history):
     return result["answer"]
 
 
-view = gr.ChatInterface(
-    _chat, type="messages").launch(server_port=GRADIO_HTTP_PORT, share=GRADIO_EXPOSE)
+view = gr.ChatInterface(_chat, type="messages").launch(
+    server_name=GRADIO_SERVER_NAME, server_port=GRADIO_HTTP_PORT)

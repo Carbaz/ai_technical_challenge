@@ -77,6 +77,9 @@ venv.bak/
 .idea
 .vscode
 
+# Gradio
+.gradio
+
 # Mac metadata
 .DS_Store
 

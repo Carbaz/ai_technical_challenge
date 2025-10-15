@@ -26,7 +26,7 @@ with env.prefixed('FCM_APA_'):
     # Application log messages format.
     LOG_FORMAT = env.str('LOG_FORMAT',
                          '{asctime} {levelname:<8} {processName}({process})'
-                         ' {threadName} {name} {lineno} "{message}"')
+                         ' {threadName} {name} {lineno} > {message}')
 
     # ##################### API CONFIGURATION:
 
@@ -54,7 +54,7 @@ with env.prefixed('FCM_APA_'):
     # ##################### GRADIO SERVICE CONFIGURATION:
 
     # Enable/disable Gradio exposure.
-    GRADIO_EXPOSE = env.bool('GRADIO_EXPOSE', False)
+    GRADIO_SERVER_NAME = env.str('GRADIO_SERVER_NAME', '127.0.0.1')
     # HTTP port for the Gradio service.
     GRADIO_HTTP_PORT = env.int('GRADIO_HTTP_PORT', 7860)
 
