@@ -6,6 +6,11 @@ services:
       target: init
     image: fcm_apa_gradio_service_init
     platform: linux/amd64
+    environment:
+      - FCM_APA_CHROMADB_PORT=8000
+      - FCM_APA_CHROMADB_HOST=chromadb
+    volumes:
+      - .env/:/service/.env # Uses `.\.env` file.
     depends_on:
       chromadb:
         condition: service_healthy
