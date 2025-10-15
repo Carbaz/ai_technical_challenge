@@ -8,7 +8,7 @@
 
 from logging import _nameToLevel, getLogger
 
-from environs import Env, validate, ValidationError
+from environs import Env, validate
 
 
 # Instantiate local logger.
@@ -46,9 +46,13 @@ try:
         CHUNKING_MODEL = env.str('CHUNKING_MODEL', 'gpt-5-mini')
         # Embedding model for text representation.
         EMBEDDING_MODEL = env.str('EMBEDDING_MODEL', 'text-embedding-3-small')
-        # Level of PDF processing: LOW: Just text, MEDIUM: With OCR, HIGH: LLM Processing.
+        # Level of PDF processing:
+        # * LOW: Just text
+        # * MEDIUM: With OCR
+        # * HIGH: LLM Processing.
         PDF_PROCESSING_LEVEL = env.str('PDF_PROCESSING_LEVEL', default='MEDIUM',
-                                        validate=validate.OneOf(['LOW', 'MEDIUM', 'HIGH']))
+                                        validate=validate.OneOf(
+                                            ['LOW', 'MEDIUM', 'HIGH']))
 
         # ##################### VECTORSTORE SERVICE CONFIGURATION:
 

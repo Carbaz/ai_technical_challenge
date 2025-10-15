@@ -74,7 +74,8 @@ def chunk_directory_text(directory, chunk_size, chunk_overlap):
 
 def chunk_directory_pdf(directory, chunk_size, chunk_overlap):
     """Chunk PDF documents from directory."""
-    _logger.info(f'LOADING PDF DOCUMENTS FROM "{directory}" AT {PDF_PROCESSING_LEVEL} LEVEL')
+    _logger.info(f'LOADING PDF DOCUMENTS FROM "{directory}"'
+                 f' AT {PDF_PROCESSING_LEVEL} LEVEL')
     match PDF_PROCESSING_LEVEL:
         case 'LOW':
             _logger.info(f'LOADING PDF DOCUMENTS FROM "{directory}"')
