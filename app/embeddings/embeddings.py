@@ -12,6 +12,8 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_openai import OpenAIEmbeddings
 
+from app.config import LLM_API_KEY, LLM_API_URL
+
 from .llm_chunker import chunk_from_directory_using_llm
 
 
@@ -56,17 +58,17 @@ def chunk_documents(docs: list[Document], chunk_size=1000, chunk_overlap=100):
         chunk_overlap=chunk_overlap).split_documents(docs)
 
 
-def embed_documents(docs: list[Document], embedding_model: Embeddings, persist_path):
+def embed_documents(docs: list[Document], model: Embeddings, db_host, db_port):
     """Embed documents into Chroma vector storage."""
-    return Chroma.from_documents(
-        documents=docs,
-        embedding=embedding_model,
-        persist_directory=persist_path)
+    return Chroma.from_documents(documents=docs, embedding=model,
+                                 host=db_host, port=db_port)
 
 
-def embed_directory(directory, metadata, db_path, model_name, chunk_size, chunk_overlap):
+def embed_directory(directory, metadata, model_name,
+                    chunk_size, chunk_overlap, db_host, db_port):
     """Embed documents from directory."""
-    embedding_model = OpenAIEmbeddings(model=model_name)
+    embedding_model = OpenAIEmbeddings(model=model_name,
+                                       api_key=LLM_API_KEY, base_url=LLM_API_URL)
 
     _logger.info(f'LOADING TEXT DOCUMENTS FROM "{directory}"')
     text_documents = load_text_from_directory(directory)
@@ -87,7 +89,16 @@ def embed_directory(directory, metadata, db_path, model_name, chunk_size, chunk_
     chunks = update_metadata(chunks, metadata)
 
     _logger.info(f'EMBEDDING DOCUMENTS')
-    embed_documents(chunks, embedding_model, db_path)
+    embed_documents(chunks, embedding_model, db_host, db_port)
+
+
+def cleanup_embeddings(db_host, db_port, filter=None):
+    """Clean up all embeddings from the vector storage."""
+    vectorstore = Chroma(host=db_host, port=db_port)
+    if filter:
+        vectorstore.delete(where=filter)
+    else:
+        vectorstore.delete_collection()
 
 
 # Instantiate local logger.

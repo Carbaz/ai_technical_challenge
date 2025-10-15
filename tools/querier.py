@@ -1,17 +1,14 @@
 """Chroma Vectorstore REPL querier."""
 
 from argparse import ArgumentParser
-from logging import basicConfig, getLogger
-from pathlib import Path
+from logging import getLogger
 
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 
-from app.config import CHROMADB_PATH, EMBEDDING_MODEL, LOG_FORMAT, LOG_LEVEL, LOG_STYLE
+from app.config import CHROMADB_HOST, CHROMADB_PORT, EMBEDDING_MODEL, LLM_API_KEY
+from app.config import LLM_API_URL
 
-
-# Setup the global logger.
-basicConfig(level=LOG_LEVEL, style=LOG_STYLE, format=LOG_FORMAT)
 
 # Instantiate local logger.
 _logger = getLogger(__name__)
@@ -23,24 +20,28 @@ def retrieve_company_data_from_vectorstore(query, company, vectorstore, n_vector
 
 
 # Manual query function.
-def query_policies(db_path, model_name):
+def query_policies(model_name):
     """Query airline policies."""
     _logger.info('LOADING VECTORSTORE')
-    embedding_model = OpenAIEmbeddings(model=model_name)
-    vectorstore = Chroma(embedding_function=embedding_model, persist_directory=db_path)
+    embedding_model = OpenAIEmbeddings(model=model_name,
+                                       api_key=LLM_API_KEY, base_url=LLM_API_URL)
+    vectorstore = Chroma(embedding_function=embedding_model,
+                         host=CHROMADB_HOST, port=CHROMADB_PORT)
     _logger.info('READY FOR QUERIES')
     query = None
     quitters = ('q', 'exit')
     companies = ('AmericanAirlines', 'Delta', 'United')
     while not query or query.lower() not in quitters:
         print('===============================')
-        company = input(f'Please choose a company ({companies}): ')
+        company = input(f'Please choose a company ({companies}) or {quitters} to quit: ')
         if company.lower() in quitters:  # Guard clause.
             break
         elif company not in companies:
             print('Sorry, unknown company.')
         else:
-            query = input('Please cast your question:\n\n\t')
+            query = input(f'Please cast your question or {quitters} to quit:\n\n\t')
+            if query.lower() in quitters:  # Guard clause.
+                break
             vectors = retrieve_company_data_from_vectorstore(query, company, vectorstore)
             for vector in vectors:
                 print('-------------------------------')
@@ -55,18 +56,8 @@ _logger = getLogger(__name__)
 if __name__ == '__main__':
     # Parse input arguments.
     _logger.debug('PARSING ARGUMENTS')
-    parser = ArgumentParser(description='Generate RAG embeddings.')
-    parser.add_argument('-p', '--persistence', help='Database persistence path',
-                        default=CHROMADB_PATH)
+    parser = ArgumentParser(description='Query RAG embeddings.')
     args = parser.parse_args()
     _logger.debug(f'PARSED ARGUMENTS: {vars(args)}')
-
-    # Sanitize inputs.
-    # Persistence path must exist and be a folder.
-    persistence_path = Path(args.persistence)
-    if not Path(args.persistence).is_dir():
-        print(f'Persistence path is not a valid folder: "{args.persistence}"')
-        exit()
-
     # Retrieve vectors REPL.
-    query_policies(args.persistence, model_name=EMBEDDING_MODEL)
+    query_policies(model_name=EMBEDDING_MODEL)

@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 environs = "*"
+urllib3 = ">=2.5.0"
 # UI Framework.
 gradio = "*"
 # RAG Processing.

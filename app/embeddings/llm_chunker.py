@@ -7,6 +7,8 @@ from langchain_core.documents import Document
 from openai import OpenAI
 from pydantic import BaseModel, Field
 
+from app.config import CHUNKING_MODEL, LLM_API_KEY, LLM_API_URL
+
 
 # Define Pydantic model classes for response format parsing.
 class _chunk(BaseModel):
@@ -45,7 +47,7 @@ def chunk_using_llm(file_path, client: OpenAI, chunk_size=1000, chunk_overlap=10
         file_obj = client.files.create(file=file, purpose='user_data')
     # Request the model to parse the file.
     response = client.chat.completions.parse(
-        model="gpt-5-mini",
+        model=CHUNKING_MODEL,
         response_format=_response_format,
         messages=[{"role": "user",
                    "content": [{'type': 'text', 'text': prompt},
@@ -59,7 +61,7 @@ def chunk_from_directory_using_llm(directory, glob='**/*.pdf',
                                    chunk_size=1000, chunk_overlap=100):
     """Process all documents from directory using an LLM and return them chunked."""
     all_chunks = []
-    client = OpenAI()
+    client = OpenAI(api_key=LLM_API_KEY, base_url=LLM_API_URL)
     for file_path in Path(directory).rglob(glob):
         _logger.info(f'CHUNKING WITH LLM: {file_path}')
         chunks = chunk_using_llm(str(file_path), client, chunk_size, chunk_overlap)
