@@ -24,17 +24,18 @@ def chunk_using_llm(file_path, client: OpenAI, chunk_size=1000, chunk_overlap=10
     prompt = f"""
     Analyze this document and return its content ready to be embedded for RAG.
 
-    You must return a list of strings, in python format,
-    one for each chunk of text you think is appropriate.
+    You must return a list of chunks, in Python JSON format, where each chunk is a
+    dictionary like:{{"page_content": "Chunk text here"}} for each chunk of text you
+    think is appropriate.
 
     Be sure not to omit information not to create new one, stick to the actual
     information in the document.
 
-    The chunks must be as long as possible, up to {chunk_size} characters,
-    and some overlap, up to {chunk_overlap} characters, is welcome.
+    Each chunk must be as long as possible, up to {chunk_size} characters.
+    Some overlap, up to {chunk_overlap} characters, is welcome.
+    Chunks must respect sentence or paragraph boundaries.
 
-    Response must be encapsulated as JSON:
-
+    Ensure the response is a valid JSON object that can be parsed with `json.loads()`:
     {{
         "chunks": [
             {{"page_content": "first_chunk ..."}},
@@ -43,9 +44,11 @@ def chunk_using_llm(file_path, client: OpenAI, chunk_size=1000, chunk_overlap=10
     }}
     """
     # Open and load file into the client.
+    _logger.info(f'LOADING PDF DOCUMENT "{file_path}" FOR LLM')
     with open(file_path, 'rb') as file:
         file_obj = client.files.create(file=file, purpose='user_data')
     # Request the model to parse the file.
+    _logger.info(f'PROCESSING PDF DOCUMENT "{file_path}" ON LLM')
     response = client.chat.completions.parse(
         model=CHUNKING_MODEL,
         response_format=_response_format,

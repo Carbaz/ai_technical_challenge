@@ -1,0 +1,57 @@
+services:
+  backend_init:
+    container_name: FCM_APA_Gradio_Service_Init
+    build:
+      context: .
+      target: init
+    image: fcm_apa_gradio_service_init
+    platform: linux/amd64
+    environment:
+      - FCM_APA_CHROMADB_PORT=8000
+      - FCM_APA_CHROMADB_HOST=chromadb
+    volumes:
+      - .env/:/service/.env # Uses `.\.env` file.
+    depends_on:
+      chromadb:
+        condition: service_healthy
+    profiles:
+      - reload
+
+  backend:
+    container_name: FCM_APA_Gradio_Service_Dev
+    build:
+      context: .
+      target: development
+    image: fcm_apa_gradio_service_dev
+    platform: linux/amd64
+    environment:
+      - FCM_APA_CHROMADB_PORT=8000
+      - FCM_APA_CHROMADB_HOST=chromadb
+      - FCM_APA_GRADIO_SERVER_NAME=0.0.0.0
+      - FCM_APA_GRADIO_HTTP_PORT=7860
+    volumes:
+      - ./:/service
+    ports:
+      - "7860:7860"
+    restart: on-failure
+    depends_on:
+      chromadb:
+        condition: service_healthy
+
+  chromadb:
+    container_name: FCM_APA_ChromaDB
+    image: chromadb/chroma
+    volumes:
+      - chroma_data:/data
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/bin/bash", "-c", "</dev/tcp/localhost/8000"]
+      start_period: 15s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  chroma_data:
