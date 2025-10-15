@@ -98,7 +98,8 @@ def cleanup_embeddings(db_host, db_port, filter=None):
     if filter:
         vectorstore.delete(where=filter)
     else:
-        vectorstore.delete_collection()
+        if all_ids := vectorstore.get()['ids']:
+            vectorstore.delete(ids=all_ids)
 
 
 # Instantiate local logger.
