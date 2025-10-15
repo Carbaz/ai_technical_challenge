@@ -84,4 +84,4 @@ venv.bak/
 ignoreme/
 ignoreme
 cache/
-chromadb/
+chromadb_store/
