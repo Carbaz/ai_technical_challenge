@@ -26,6 +26,7 @@ WORKDIR /service
 USER root
 COPY /app ./app
 COPY /tools ./tools
+COPY /policies ./policies
 RUN chown -R runuser:rungroup .
 USER runuser
 ENTRYPOINT ["tools/initialize.sh"]
