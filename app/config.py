@@ -6,7 +6,7 @@
     this file.
 """
 
-from logging import getLogger
+from logging import _nameToLevel, getLogger
 
 from environs import Env
 
@@ -19,6 +19,8 @@ with env.prefixed('FCM_APA_'):
 
     # ##################### LOGGER CONFIGURATION:
 
+    # Application log level.
+    LOG_LEVEL = env.log_level('LOG_LEVEL', 'INFO')
     # Application log messages format style.
     LOG_STYLE = env.str('LOG_STYLE', '{')
     # Application log messages format.
@@ -26,19 +28,14 @@ with env.prefixed('FCM_APA_'):
                          '{asctime} {levelname:<8} {processName}({process})'
                          ' {threadName} {name} {lineno} "{message}"')
 
-    # ##################### LOG LEVELS CONFIGURATION:
+    # ##################### API CONFIGURATION:
 
-    # Application log level.
-    LOG_LEVEL = env.log_level('LOG_LEVEL', 'INFO')
-    # Database service log level.
-    DATABASE_LOG_LEVEL = env.log_level('DATABASE_LOG_LEVEL', 'ERROR')
+    # Base URL for the LLM API.
+    LLM_API_URL = env.str('LLM_API_URL', None)
+    # API key for the LLM service.
+    LLM_API_KEY = env.str('LLM_API_KEY', None)
 
-    # ##################### VECTORSTORE SERVICE CONFIGURATION:
-
-    # Path to the ChromaDB database.
-    CHROMADB_PATH = env.str('CHROMADB_PATH', 'chromadb')
-
-    # ##################### VECTORSTORE SERVICE CONFIGURATION:
+    # ##################### MODELS CONFIGURATION:
 
     # Chat model for user interactions.
     CHAT_MODEL = env.str('CHAT_MODEL', 'gpt-4.1-mini')
@@ -47,10 +44,23 @@ with env.prefixed('FCM_APA_'):
     # Embedding model for text representation.
     EMBEDDING_MODEL = env.str('EMBEDDING_MODEL', 'text-embedding-3-small')
 
+    # ##################### VECTORSTORE SERVICE CONFIGURATION:
+
+    # Port for the ChromaDB database.
+    CHROMADB_PORT = env.int('CHROMADB_PORT', 8000)
+    # Hostname for the ChromaDB database.
+    CHROMADB_HOST = env.str('CHROMADB_HOST', 'localhost')
+
+    # ##################### GRADIO SERVICE CONFIGURATION:
+
+    # Enable/disable Gradio exposure.
+    GRADIO_EXPOSE = env.bool('GRADIO_EXPOSE', False)
+    # HTTP port for the Gradio service.
+    GRADIO_HTTP_PORT = env.int('GRADIO_HTTP_PORT', 7860)
+
 
 # Define set of configuration fields that MUST NOT BE LOGGED/PRINTED
-SENSIBLE_FIELDS = ()
-# SENSIBLE_FIELDS = ('DATABASE_PASS', 'DATABASE_URI')
+SENSIBLE_FIELDS = ('FCM_APA_LLM_API_KEY')
 
 
 def get_conf():
@@ -59,10 +69,10 @@ def get_conf():
             if key not in SENSIBLE_FIELDS}
 
 
-def log_conf():
+def log_conf(level='DEBUG'):
     """Print out current configuration values."""
     for var, value in sorted(get_conf().items()):
-        _logger.debug(f'{var} = {repr(value)}')
+        _logger.log(_nameToLevel[level], f'{var} = {repr(value)}')
 
 
 def print_conf():
