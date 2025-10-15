@@ -69,10 +69,10 @@ def get_conf():
             if key not in SENSIBLE_FIELDS}
 
 
-def log_conf(level='DEBUG'):
+def log_conf(level=_nameToLevel['DEBUG']):
     """Print out current configuration values."""
     for var, value in sorted(get_conf().items()):
-        _logger.log(_nameToLevel[level], f'{var} = {repr(value)}')
+        _logger.log(level, f'{var} = {repr(value)}')
 
 
 def print_conf():
