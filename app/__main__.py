@@ -43,5 +43,9 @@ def _chat(message, history):
     return result["answer"]
 
 
-view = gr.ChatInterface(_chat, type="messages").launch(
-    server_name=GRADIO_SERVER_NAME, server_port=GRADIO_HTTP_PORT)
+try:
+    view = gr.ChatInterface(_chat, type="messages").launch(
+        server_name=GRADIO_SERVER_NAME, server_port=GRADIO_HTTP_PORT)
+except Exception as ex:
+    _logger.critical(f'CRITICAL ERROR ON GRADIO SERVICE: {ex}')
+    exit(1)
