@@ -59,6 +59,7 @@ Content rules (mandatory):
   present in the actual project.
 * Do not add optional features, alternatives, or speculative enhancements unless they
   are already implemented.
+* Under no circumstances should you use or reference any content from the `.env` file.
 
 At the end of the README, include a separate section titled **Limitations and Future
 Improvements**, where you may describe:
