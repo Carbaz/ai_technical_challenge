@@ -30,7 +30,10 @@ pydocstyle = "*"
 pycodestyle = "*"
 # Testing.
 pytest = "*"
+pytest-mock = "*"
+pytest-cov = "*"
 coverage = "*"
+faker = "*"
 # Interactive Notebook.
 ipykernel = "*"
 ipywidgets = "*"
