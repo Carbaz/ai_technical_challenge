@@ -15,7 +15,8 @@ langchain-chroma = "*"
 langchain-openai = "*"
 langchain-community = "*"
 # PDF Processing.
-unstructured = {extras = ["pdf"], version = "*" }
+pypdf = "*"
+pytesseract = "*"
 # Models SDK.
 openai = "*"
 
