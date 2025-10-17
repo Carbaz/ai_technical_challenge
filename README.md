@@ -1,5 +1,57 @@
 # Airline Policy Assistant Service
 
+## Architecture Changes: From GPU-Dependent to CPU-Only Stack
+
+> [!WARNING] Latest changes!
+>
+> Initially, this project relied on a GPU-dependent stack using libraries
+> like `unstructured` for PDF processing and OCR. However, this approach
+> introduced significant robustness issues:
+>
+> * **CUDA Dependency Problems**: `unstructured` required NVIDIA CUDA drivers
+>   and GPU hardware. It failed in environments without compatible GPUs
+>   (e.g., AMD/ATI GPUs, cloud instances without GPU allocation, or local
+>   machines with driver issues).
+> * **Inconsistent Performance**: Builds and runs were unreliable across
+>   different architectures, leading to deployment failures.
+> * **Complexity**: Managing GPU drivers and versions added unnecessary
+>   overhead for a technical challenge focused on core functionality.
+> * **Docker and Architecture Issues**: Building Docker images with GPU
+>   dependencies was challenging and unreliable. Additionally, since the
+>   final execution environment's architecture (GPU type or presence) was
+>   unknown, we couldn't assume NVIDIA libraries or graphical capabilities.
+>
+> To address this, we switched to a **CPU-only stack** for maximum robustness
+> and portability.
+>
+> We removed `unstructured` and replaced it with `pypdf` for
+> PDF text extraction and `pytesseract` with `tesseract-ocr` for OCR:
+>
+> We also developed a custom PDF loader that processes documents page by page,
+> integrating text extraction, OCR with image enhancement, and optional debugging
+> for maximum control and accuracy.
+>
+> * **PDF Text Extraction**: Uses `pypdf` for direct text extraction from PDFs.
+> * **OCR Processing**: Uses `pytesseract` with `tesseract-ocr` for image-based
+>   text recognition, running entirely on CPU.
+> * **No GPU Requirements**: Works on any machine, regardless of GPU type
+>   (NVIDIA, AMD, or none).
+> * **Docker Compatibility**: Docker images now work independently of the host
+>   architecture, as the stack is CPU-only and doesn't require GPU-specific
+>   drivers.
+> * **OCR Debugging**: Optional debugging mode (via config) saves original
+>   images, enhanced images, and extracted texts for inspection.
+> * **OCR Improvements**: We studied and improved OCR processing techniques,
+>   such as image enhancement for better text recognition.
+>
+> This change ensures the system runs reliably in any environment,
+> prioritizing simplicity and compatibility over raw performance.
+>
+> For complex images, the existing LLM-based loader can always
+> be used.
+>
+> ---
+
 A Retrieval-Augmented Generation (RAG) chatbot application that allows users to
 query airline policies using natural language. The system uses Large Language
 Models (LLMs) for understanding questions and a vector database for efficient
@@ -36,7 +88,8 @@ ai_technical_challenge/
 │   └── embeddings/            # Document processing and embedding logic
 │       ├── __init__.py        # Package initialization
 │       ├── embeddings.py      # Core embedding functions
-│       └── llm_chunker.py     # LLM-based document chunking
+│       ├── llm_chunker.py     # LLM-based document chunking
+│       └── pdf_loader.py      # PDF loading and OCR processing
 ├── policies/                  # Airline policy documents
 │   ├── AmericanAirlines/      # American Airlines policies (Markdown)
 │   ├── Delta/                 # Delta Airlines policies (Markdown)
@@ -266,6 +319,7 @@ prefix. All variables can be set in the `.env` file.
 | `FCM_APA_CHAT_MODEL` | `gpt-4.1-mini` | Model for chat interactions |
 | `FCM_APA_CHUNKING_MODEL` | `gpt-5-mini` | Model for LLM-based chunking |
 | `FCM_APA_EMBEDDING_MODEL` | `text-embedding-3-small` | Model for embeddings |
+| `FCM_APA_OCR_DEBUG` | `false` | Enable OCR debugging mode to save images and texts |
 | `FCM_APA_PDF_PROCESSING_LEVEL` | `MEDIUM` | PDF processing: LOW, MEDIUM, HIGH |
 | `FCM_APA_CHROMADB_HOST` | `localhost` | ChromaDB hostname |
 | `FCM_APA_CHROMADB_PORT` | `8000` | ChromaDB port |
@@ -303,7 +357,9 @@ FCM_APA_PDF_PROCESSING_LEVEL=MEDIUM
 
 ### Document Processing
 
-* **unstructured[pdf]:** Advanced PDF processing with OCR capabilities
+* **pypdf**: PDF text extraction library
+* **pytesseract**: Python wrapper for Tesseract OCR
+* **tesseract-ocr**: OCR engine (system-level installation required)
 * **RecursiveCharacterTextSplitter:** Intelligent document chunking
 
 ### Development Tools
@@ -576,6 +632,7 @@ documentation:
 * `ai_technical_challenge/app/config.py`
 * `ai_technical_challenge/app/embeddings/embeddings.py`
 * `ai_technical_challenge/app/embeddings/llm_chunker.py`
+* `ai_technical_challenge/app/embeddings/pdf_loader.py`
 * `ai_technical_challenge/tools/embed_company.py`
 * `ai_technical_challenge/tools/cleanup_chroma.py`
 * `ai_technical_challenge/tools/querier.py`
@@ -600,9 +657,13 @@ documentation:
   may cause ungraceful failures.
 * **Fixed chunk parameters:** Chunk size and overlap are configured per
   embedding run, not optimized per document type.
+* **OCR accuracy:** OCR accuracy may vary with complex images;
+  use LLM loader for better results.
 
 ### Future Improvements
 
+* **Separate Loader and Chat services:** Separate services will allow a much more
+  manageable Loader without overloading the service or project repository.
 * **Multi-user support:** Add session management and user authentication
 * **Persistent conversation history:** Store users chat history in a database
 * **Citation support:** Display source document references with answers
@@ -612,3 +673,4 @@ documentation:
   performance monitoring
 * **API endpoint:** Expose a REST API alongside the Gradio interface
 * **Document versioning:** Track policy document updates and version history
+* **Optimize OCR preprocessing:** For specific document types.
