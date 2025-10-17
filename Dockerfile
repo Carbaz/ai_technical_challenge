@@ -1,17 +1,9 @@
 FROM python:3.13-slim AS base
-RUN groupadd -r rungroup
-RUN useradd -rm runuser -g rungroup
+RUN groupadd -r rungroup && useradd -rm runuser -g rungroup
 WORKDIR /service
 ENV PIPENV_DONT_LOAD_ENV=1
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget \
-    gnupg2 \
-    ca-certificates && \
-    wget https://developer.download.nvidia.com/compute/cuda/repos/debian11/x86_64/cuda-keyring_1.0-1_all.deb && \
-    dpkg -i cuda-keyring_1.0-1_all.deb && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends cuda-cudart-12-0 && \
-    rm -rf /var/lib/apt/lists/* cuda-keyring_1.0-1_all.deb
+RUN apt-get update && apt-get install -y --no-install-recommends wget && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN pip install --upgrade --no-cache-dir pip wheel pipenv
 COPY Pipfile ./
 COPY Pipfile.lock ./
@@ -24,6 +16,12 @@ HEALTHCHECK --start-period=15s --interval=10s --timeout=5s --retries=3 \
 FROM base AS init
 WORKDIR /service
 USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libgl1 \
+        libglib2.0-0 \
+        tesseract-ocr \
+        poppler-utils && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 COPY /app ./app
 COPY /tools ./tools
 COPY /policies ./policies

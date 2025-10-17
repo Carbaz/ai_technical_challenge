@@ -4,9 +4,7 @@ from logging import getLogger
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
-from langchain_community.document_loaders import DirectoryLoader, TextLoader
-from langchain_community.document_loaders import UnstructuredFileLoader
-from langchain_community.document_loaders import UnstructuredPDFLoader
+from langchain_community.document_loaders import DirectoryLoader, PyPDFLoader, TextLoader
 from langchain_community.vectorstores.utils import filter_complex_metadata
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
@@ -15,6 +13,7 @@ from langchain_openai import OpenAIEmbeddings
 from app.config import LLM_API_KEY, LLM_API_URL, PDF_PROCESSING_LEVEL
 
 from .llm_chunker import chunk_from_directory_using_llm
+from .new_pdf_loader import MyPDFLoader
 
 
 def load_text_from_directory(directory, glob=('**/*.txt', '**/*.md')):
@@ -31,8 +30,7 @@ def load_pdf_from_directory(directory, glob='**/*.pdf'):
     return DirectoryLoader(
         path=directory,
         glob=glob,
-        loader_cls=UnstructuredPDFLoader,
-        loader_kwargs={"mode": "hi_res"}).load()
+        loader_cls=PyPDFLoader).load()
 
 
 def load_pdf_from_directory_with_ocr(directory, glob='**/*.pdf'):
@@ -40,8 +38,7 @@ def load_pdf_from_directory_with_ocr(directory, glob='**/*.pdf'):
     return DirectoryLoader(
         path=directory,
         glob=glob,
-        loader_cls=UnstructuredFileLoader,
-        loader_kwargs={"unstructured_kwargs": {"strategy": "hi_res"}}).load()
+        loader_cls=MyPDFLoader).load()
 
 
 def update_metadata(docs: list[Document], metadata: dict):
