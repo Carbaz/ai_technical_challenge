@@ -13,7 +13,7 @@ from langchain_openai import OpenAIEmbeddings
 from app.config import LLM_API_KEY, LLM_API_URL, PDF_PROCESSING_LEVEL
 
 from .llm_chunker import chunk_from_directory_using_llm
-from .new_pdf_loader import MyPDFLoader
+from .pdf_loader import MyPDFLoader
 
 
 def load_text_from_directory(directory, glob=('**/*.txt', '**/*.md')):
