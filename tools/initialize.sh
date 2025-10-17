@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# set -exuo pipefail
+set -exuo pipefail
 
 echo "Cleaning up DB..."
 pipenv run python -Bm tools.cleanup_chroma
