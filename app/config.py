@@ -46,9 +46,14 @@ try:
         CHUNKING_MODEL = env.str('CHUNKING_MODEL', 'gpt-5-mini')
         # Embedding model for text representation.
         EMBEDDING_MODEL = env.str('EMBEDDING_MODEL', 'text-embedding-3-small')
+
+        # ##################### OCR CONFIGURATION:
+
+        # Enable/disable OCR debug image saving.
+        OCR_DEBUG = env.bool('OCR_DEBUG', True)
         # Level of PDF processing:
-        # * LOW: Just text
-        # * MEDIUM: With OCR
+        # * LOW: Just text.
+        # * MEDIUM: With OCR.
         # * HIGH: LLM Processing.
         PDF_PROCESSING_LEVEL = env.str('PDF_PROCESSING_LEVEL', default='MEDIUM',
                                         validate=validate.OneOf(

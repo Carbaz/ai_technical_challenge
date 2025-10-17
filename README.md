@@ -1,5 +1,61 @@
 # Airline Policy Assistant Service
 
+## Architecture Changes: From GPU-Dependent to CPU-Only Stack
+
+> [!WARNING]
+>
+> Latest changes!
+>
+> Initially, this project relied on a GPU-dependent stack using libraries
+> like `unstructured` for PDF processing and OCR. However, this approach
+> introduced significant robustness issues:
+>
+> * **CUDA Dependency Problems**: `unstructured` required NVIDIA CUDA drivers
+>   and GPU hardware. It failed in environments without compatible GPUs
+>   (e.g., AMD/ATI GPUs, cloud instances without GPU allocation, or local
+>   machines with driver issues).
+> * **Inconsistent Performance**: Builds and runs were unreliable across
+>   different architectures, leading to deployment failures.
+> * **Complexity**: Managing GPU drivers and versions added unnecessary
+>   overhead for a technical challenge focused on core functionality.
+> * **Docker and Architecture Issues**: Building Docker images with GPU
+>   dependencies was challenging and unreliable. Additionally, since the
+>   final execution environment's architecture (GPU type or presence) was
+>   unknown, we couldn't assume NVIDIA libraries or graphical capabilities.
+>
+> To address this, we switched to a **CPU-only stack** for maximum robustness
+> and portability.
+>
+> We removed `unstructured` and replaced it with `pypdf` for
+> PDF text extraction and `pytesseract` with `tesseract-ocr` for OCR:
+>
+> We also developed a custom PDF loader that processes documents page by page,
+> integrating text extraction, OCR with image enhancement, and optional debugging
+> for maximum control and accuracy.
+>
+> * **PDF Text Extraction**: Uses `pypdf` for direct text extraction from PDFs.
+> * **OCR Processing**: Uses `pytesseract` with `tesseract-ocr` for image-based
+>   text recognition, running entirely on CPU.
+> * **No GPU Requirements**: Works on any machine, regardless of GPU type
+>   (NVIDIA, AMD, or none).
+> * **Docker Compatibility**: Docker images now work independently of the host
+>   architecture, as the stack is CPU-only and doesn't require GPU-specific
+>   drivers.
+> * **OCR Debugging**: Optional debugging mode (via config) saves original
+>   images, enhanced images, and extracted texts for inspection.
+> * **OCR Improvements**: We studied and improved OCR processing techniques,
+>   such as image enhancement for better text recognition.
+>
+> This change ensures the system runs reliably in any environment,
+> prioritizing simplicity and compatibility over raw performance.
+>
+> For complex images, the existing LLM-based loader can always
+> be used.
+>
+> ---
+
+<div class="page"/>
+
 A Retrieval-Augmented Generation (RAG) chatbot application that allows users to
 query airline policies using natural language. The system uses Large Language
 Models (LLMs) for understanding questions and a vector database for efficient
@@ -25,6 +81,8 @@ AI interface powered by OpenAI's GPT models to answer user questions.
 * Conversational memory for context-aware responses
 * Dockerized deployment with development and production modes
 
+<div class="page"/>
+
 ## Architecture and Folder Structure
 
 ```sh
@@ -36,7 +94,8 @@ ai_technical_challenge/
 │   └── embeddings/            # Document processing and embedding logic
 │       ├── __init__.py        # Package initialization
 │       ├── embeddings.py      # Core embedding functions
-│       └── llm_chunker.py     # LLM-based document chunking
+│       ├── llm_chunker.py     # LLM-based document chunking
+│       └── pdf_loader.py      # PDF loading and OCR processing
 ├── policies/                  # Airline policy documents
 │   ├── AmericanAirlines/      # American Airlines policies (Markdown)
 │   ├── Delta/                 # Delta Airlines policies (Markdown)
@@ -58,6 +117,8 @@ ai_technical_challenge/
 ├── setup.cfg                  # Code quality tool configurations
 └── ruff.toml                  # Ruff linter configuration
 ```
+
+<div class="page"/>
 
 ### System Architecture
 
@@ -96,6 +157,8 @@ flowchart LR
     Chunks -->|Embed| Embed[OpenAI Embeddings]
     Embed -->|Store| DB[(ChromaDB)]
 ```
+
+<div class="page"/>
 
 ## Getting Started
 
@@ -138,15 +201,17 @@ flowchart LR
    For production mode:
 
    ```bash
-   docker-compose -f docker-compose-prod.yaml up
+   docker-compose -f docker-compose-prod.yaml up -d --build
    ```
+
+<div class="page"/>
 
 4. **Initialize the database:**
 
    On first run, you need to populate the vector database with airline policies:
 
    ```bash
-   docker-compose --profile reload up backend_init
+   docker-compose --profile reload up backend_init -d --build
    ```
 
    Or manually run the initialization script inside the container.
@@ -158,6 +223,18 @@ flowchart LR
    ```txt
    http://localhost:7860
    ```
+
+6. **Monitor containers:**
+
+   A Portainer service is included in the `dockers` folder to provide a Docker
+   management interface.
+
+   Any other container management tool can be used, but
+   Portainer is provided for convenience.
+
+   ![Screenshot: Docker containers running](docs\pictures\containers_on_portainer.jpg)
+
+<div class="page"/>
 
 ## Usage Guide
 
@@ -204,13 +281,15 @@ If you prefer to run ChromaDB separately:
    pipenv run python -Bm app
    ```
 
+<div class="page"/>
+
 ### Running in Development Mode (Docker Compose)
 
 Development mode mounts the source code into the container, allowing for
 real-time code changes without rebuilding:
 
 ```bash
-docker-compose up
+docker-compose up -d --build
 ```
 
 **Features:**
@@ -225,7 +304,7 @@ docker-compose up
 Production mode copies the code into the image for isolated deployment:
 
 ```bash
-docker-compose -f docker-compose-prod.yaml up --build
+docker-compose -f docker-compose-prod.yaml up -d --build
 ```
 
 **Features:**
@@ -242,7 +321,7 @@ Both compose files include a `backend_init` service with the `reload` profile
 for database initialization:
 
 ```bash
-docker-compose --profile reload up backend_init
+docker-compose --profile reload up backend_init -d --build
 ```
 
 This service runs the `initialize.sh` script which:
@@ -250,6 +329,8 @@ This service runs the `initialize.sh` script which:
 1. Cleans the ChromaDB database
 2. Processes and embeds all airline policies
 3. Exits after completion
+
+<div class="page"/>
 
 ## Configuration
 
@@ -266,6 +347,7 @@ prefix. All variables can be set in the `.env` file.
 | `FCM_APA_CHAT_MODEL` | `gpt-4.1-mini` | Model for chat interactions |
 | `FCM_APA_CHUNKING_MODEL` | `gpt-5-mini` | Model for LLM-based chunking |
 | `FCM_APA_EMBEDDING_MODEL` | `text-embedding-3-small` | Model for embeddings |
+| `FCM_APA_OCR_DEBUG` | `false` | Enable OCR debugging mode to save images and texts |
 | `FCM_APA_PDF_PROCESSING_LEVEL` | `MEDIUM` | PDF processing: LOW, MEDIUM, HIGH |
 | `FCM_APA_CHROMADB_HOST` | `localhost` | ChromaDB hostname |
 | `FCM_APA_CHROMADB_PORT` | `8000` | ChromaDB port |
@@ -286,6 +368,8 @@ The application supports three levels of PDF processing:
 FCM_APA_PDF_PROCESSING_LEVEL=MEDIUM
 ```
 
+<div class="page"/>
+
 ## Main Dependencies
 
 ### Core Framework
@@ -303,7 +387,9 @@ FCM_APA_PDF_PROCESSING_LEVEL=MEDIUM
 
 ### Document Processing
 
-* **unstructured[pdf]:** Advanced PDF processing with OCR capabilities
+* **pypdf**: PDF text extraction library
+* **pytesseract**: Python wrapper for Tesseract OCR
+* **tesseract-ocr**: OCR engine (system-level installation required)
 * **RecursiveCharacterTextSplitter:** Intelligent document chunking
 
 ### Development Tools
@@ -311,6 +397,8 @@ FCM_APA_PDF_PROCESSING_LEVEL=MEDIUM
 * **Pipenv:** Dependency management and virtual environments
 * **Ruff:** Fast Python linter
 * **isort, mypy, pytest:** Code quality and testing tools
+
+<div class="page"/>
 
 ## Tools
 
@@ -360,6 +448,8 @@ pipenv run python -Bm tools.querier
 
 Allows interactive querying by company and displays retrieved document chunks.
 
+<div class="page"/>
+
 ### `initialize.sh`
 
 Bash script that initializes the database with all airline policies.
@@ -386,6 +476,8 @@ Tests connectivity and lists available models from the LLM API endpoint.
 ```bash
 pipenv run python -Bm tools.API_test
 ```
+
+<div class="page"/>
 
 ## Strategic Decisions
 
@@ -444,9 +536,9 @@ All configuration through the `environs` library with the `FCM_APA_` prefix.
 **Rationale:** Follows the 12-factor app methodology, enabling easy
 containerization and deployment across environments.
 
-## Usage Examples
+<div class="page"/>
 
-### Example Questions
+## Usage Examples
 
 Here are real-world queries the system can answer:
 
@@ -456,10 +548,13 @@ Here are real-world queries the system can answer:
 Can my pet travel with me on the plane on Delta?
 ```
 
+![Screenshot: Example conversation](docs/pictures/pets-on-delta.jpg)\
 **Response Type:** Information about Delta's pet policies, including cabin
 restrictions, carrier requirements, and fees.
 
 ---
+
+<div class="page"/>
 
 **Query:**
 
@@ -468,10 +563,13 @@ I have three kids 2, 8 and 10 years old and I am traveling with them on a
 United flight, what are the rules for children traveling?
 ```
 
+![Screenshot: Example conversation](docs/pictures/kids-on-united.jpg)\
 **Response Type:** Details about United's policies for traveling with children,
 including infant requirements, unaccompanied minor rules, and family boarding.
 
 ---
+
+<div class="page"/>
 
 **Query:**
 
@@ -479,10 +577,13 @@ including infant requirements, unaccompanied minor rules, and family boarding.
 What is the baggage policy for American Airlines?
 ```
 
+![Screenshot: Example conversation](docs/pictures/baggage-on-american.jpg)\
 **Response Type:** Comprehensive baggage information including size limits,
 weight restrictions, and fees.
 
 ---
+
+<div class="page"/>
 
 **Query:**
 
@@ -490,10 +591,13 @@ weight restrictions, and fees.
 My wife is 8 months pregnant, can she travel on a Delta flight?
 ```
 
+![Screenshot: Example conversation](docs/pictures/pregnant-on-delta.jpg)\
 **Response Type:** Delta's policies on pregnant passengers, including
 restrictions and medical documentation requirements.
 
 ---
+
+<div class="page"/>
 
 ### Code Example: Embedding Workflow
 
@@ -521,6 +625,8 @@ def embed_directory(directory, metadata, model_name,
     _logger.info(f'EMBEDDING DOCUMENTS')
     embed_documents(chunks, embedding_model, db_host, db_port)
 ```
+
+<div class="page"/>
 
 ### Code Example: Chat Interface
 
@@ -551,36 +657,7 @@ except Exception as ex:
     exit(1)
 ```
 
-## Screenshots
-
-![Screenshot: Gradio chat interface](screenshots/gradio-interface.png)
-
-![Screenshot: Example conversation](screenshots/example-conversation.png)
-
-![Screenshot: Docker containers running](screenshots/docker-containers.png)
-
-## Referenced Files
-
-The following project files were used as reference to generate this
-documentation:
-
-* `ai_technical_challenge/CHALLENGE.md`
-* `ai_technical_challenge/Pipfile`
-* `ai_technical_challenge/Dockerfile`
-* `ai_technical_challenge/docker-compose.yaml`
-* `ai_technical_challenge/docker-compose-prod.yaml`
-* `ai_technical_challenge/template.env`
-* `ai_technical_challenge/setup.cfg`
-* `ai_technical_challenge/ruff.toml`
-* `ai_technical_challenge/app/__main__.py`
-* `ai_technical_challenge/app/config.py`
-* `ai_technical_challenge/app/embeddings/embeddings.py`
-* `ai_technical_challenge/app/embeddings/llm_chunker.py`
-* `ai_technical_challenge/tools/embed_company.py`
-* `ai_technical_challenge/tools/cleanup_chroma.py`
-* `ai_technical_challenge/tools/querier.py`
-* `ai_technical_challenge/tools/initialize.sh`
-* `ai_technical_challenge/tools/API_test.py`
+<div class="page"/>
 
 ## Limitations and Future Improvements
 
@@ -600,9 +677,13 @@ documentation:
   may cause ungraceful failures.
 * **Fixed chunk parameters:** Chunk size and overlap are configured per
   embedding run, not optimized per document type.
+* **OCR accuracy:** OCR accuracy may vary with complex images;
+  use LLM loader for better results.
 
 ### Future Improvements
 
+* **Separate Loader and Chat services:** Separate services will allow a much more
+  manageable Loader without overloading the service or project repository.
 * **Multi-user support:** Add session management and user authentication
 * **Persistent conversation history:** Store users chat history in a database
 * **Citation support:** Display source document references with answers
@@ -612,3 +693,30 @@ documentation:
   performance monitoring
 * **API endpoint:** Expose a REST API alongside the Gradio interface
 * **Document versioning:** Track policy document updates and version history
+* **Optimize OCR preprocessing:** For specific document types.
+
+<div class="page"/>
+
+## Referenced Files
+
+The following project files were used as reference to generate this
+documentation:
+
+* `ai_technical_challenge/CHALLENGE.md`
+* `ai_technical_challenge/Pipfile`
+* `ai_technical_challenge/Dockerfile`
+* `ai_technical_challenge/docker-compose.yaml`
+* `ai_technical_challenge/docker-compose-prod.yaml`
+* `ai_technical_challenge/template.env`
+* `ai_technical_challenge/setup.cfg`
+* `ai_technical_challenge/ruff.toml`
+* `ai_technical_challenge/app/__main__.py`
+* `ai_technical_challenge/app/config.py`
+* `ai_technical_challenge/app/embeddings/embeddings.py`
+* `ai_technical_challenge/app/embeddings/llm_chunker.py`
+* `ai_technical_challenge/app/embeddings/pdf_loader.py`
+* `ai_technical_challenge/tools/embed_company.py`
+* `ai_technical_challenge/tools/cleanup_chroma.py`
+* `ai_technical_challenge/tools/querier.py`
+* `ai_technical_challenge/tools/initialize.sh`
+* `ai_technical_challenge/tools/API_test.py`

@@ -7,13 +7,15 @@ from .embeddings import embed_documents, load_pdf_from_directory
 from .embeddings import load_pdf_from_directory_with_ocr, load_text_from_directory
 from .embeddings import update_metadata
 from .llm_chunker import chunk_from_directory_using_llm, chunk_using_llm
+from .pdf_loader import MyPDFLoader
 
 
 __all__ = ['chunk_documents', 'cleanup_embeddings', 'embed_directory',
            'embed_documents', 'load_pdf_from_directory',
            'load_pdf_from_directory_with_ocr', 'load_text_from_directory',
            'update_metadata',
-           'chunk_from_directory_using_llm', 'chunk_using_llm']
+           'chunk_from_directory_using_llm', 'chunk_using_llm',
+           'MyPDFLoader']
 
 # Instantiate local logger.
 _logger = getLogger(__name__)
