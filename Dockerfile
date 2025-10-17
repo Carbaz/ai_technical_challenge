@@ -43,3 +43,14 @@ COPY /tools ./tools
 RUN chown -R runuser:rungroup .
 USER runuser
 ENTRYPOINT ["pipenv", "run", "python", "-Bm", "app"]
+
+FROM production AS testing
+WORKDIR /service
+USER root
+COPY setup.cfg ./
+COPY pytest.ini ./
+COPY /tests ./tests
+RUN chown -R runuser:rungroup .
+USER runuser
+RUN pipenv install --deploy --clear --dev
+ENTRYPOINT ["tail", "-f", "/dev/null"]
