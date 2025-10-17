@@ -3,7 +3,7 @@
 from logging import getLogger
 
 import gradio as gr
-from langchain.chains import ConversationalRetrievalChain
+from langchain.chains.conversational_retrieval.base import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 from langchain_chroma import Chroma
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -36,15 +36,35 @@ conversation_chain = ConversationalRetrievalChain.from_llm(llm=llm, retriever=re
                                                            memory=memory)
 
 
-# Chat function for Gradio interface.
+# ## ############## Chat functions for Gradio interface.
 # * "history" isn't used as the memory is included on the ConversationalRetrievalChain.
+
 def _chat(message, history):
     result = conversation_chain.invoke({"question": message})
     return result["answer"]
 
 
+def _clear():
+    _logger.info('Clearing conversation memory...')
+    conversation_chain.memory.clear()
+    return '', []
+
+
+class myChatInterface(gr.ChatInterface):
+    """Custom Gradio ChatInterface to clear chain memory when using the clear button."""
+    def __init__(self, chat_fn, reset_fn, *args, **kwargs):
+        """Initialize the custom chat interface."""
+        super().__init__(chat_fn, *args, **kwargs)
+        self.reset_fn = reset_fn
+
+    def _delete_conversation(self, *args, **kwargs):
+        """Override to clear chain memory before deleting conversation."""
+        self.reset_fn()
+        return super()._delete_conversation(*args, **kwargs)
+
+
 try:
-    view = gr.ChatInterface(_chat, type="messages").launch(
+    view = myChatInterface(_chat, _clear, type="messages").launch(
         server_name=GRADIO_SERVER_NAME, server_port=GRADIO_HTTP_PORT)
 except Exception as ex:
     _logger.critical(f'CRITICAL ERROR ON GRADIO SERVICE: {ex}')
