@@ -232,7 +232,7 @@ flowchart LR
    Any other container management tool can be used, but
    Portainer is provided for convenience.
 
-   ![Screenshot: Docker containers running](docs\pictures\containers_on_portainer.jpg)
+   ![Screenshot: Docker containers running](docs/pictures/containers_on_portainer.jpg)
 
 <div class="page"/>
 
@@ -633,24 +633,42 @@ def embed_directory(directory, metadata, model_name,
 From `__main__.py`:
 
 ```python
-# Set up the conversation chain with the Chat LLM, the vectorstore and the
-# memory.
+# Set up the conversation chain with the Chat LLM, the vectorstore
+# and the memory.
 conversation_chain = ConversationalRetrievalChain.from_llm(
-    llm=llm,
-    retriever=retriever,
-    memory=memory)
+    llm=llm, retriever=retriever, memory=memory)
 
 
-# Chat function for Gradio interface.
-# * "history" isn't used as the memory is included on the
-#   ConversationalRetrievalChain.
+# ## ############## Chat functions for Gradio interface.
+# * "history" isn't used as the memory is included
+#   on the ConversationalRetrievalChain.
+
 def _chat(message, history):
     result = conversation_chain.invoke({"question": message})
     return result["answer"]
 
 
+def _clear():
+    _logger.info('Clearing conversation memory...')
+    conversation_chain.memory.clear()
+    return '', []
+
+
+class myChatInterface(gr.ChatInterface):
+    """Custom Gradio ChatInterface to clear chain memory when using the clear button."""
+    def __init__(self, chat_fn, reset_fn, *args, **kwargs):
+        """Initialize the custom chat interface."""
+        super().__init__(chat_fn, *args, **kwargs)
+        self.reset_fn = reset_fn
+
+    def _delete_conversation(self, *args, **kwargs):
+        """Override to clear chain memory before deleting conversation."""
+        self.reset_fn()
+        return super()._delete_conversation(*args, **kwargs)
+
+
 try:
-    view = gr.ChatInterface(_chat, type="messages").launch(
+    view = myChatInterface(_chat, _clear, type="messages").launch(
         server_name=GRADIO_SERVER_NAME, server_port=GRADIO_HTTP_PORT)
 except Exception as ex:
     _logger.critical(f'CRITICAL ERROR ON GRADIO SERVICE: {ex}')
@@ -667,9 +685,9 @@ except Exception as ex:
   metadata filtering. Multiple collections could improve isolation.
 * **In-memory conversation history:** Memory resets when the service restarts.
   Persistent storage would enable session recovery.
-* **Deprecated conversational chain:** `ConversationalRetrievalChain` is deprecated and
-  should be migrated to use `create_history_aware_retriever` together with
-  `create_retrieval_chain` instead:
+* **Deprecated conversational chain:** `ConversationalRetrievalChain` is
+  deprecated. Future versions should migrate to `create_history_aware_retriever`
+  and `create_retrieval_chain` for better maintainability.
   * <https://python.langchain.com/api_reference/langchain/chains/langchain.chains.conversational_retrieval.base.ConversationalRetrievalChain.html>
 * **No authentication:** The Gradio interface is publicly accessible without
   user authentication.
